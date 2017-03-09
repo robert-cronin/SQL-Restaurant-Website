@@ -1,18 +1,23 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from database_query import query
 import cgi
 
 class webserverHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            if self.path.endswith("/hello"):
+            if self.path.endswith("/restaurants"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
-
+                restaurants = query("SELECT name FROM Restaurant")
                 output = ""
                 output += "<html><body>"
-                output += "Hello!"
-                output += "<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name='message' type='text'><input type='submit' value='Submit'></form>"
+                for restaurant in restaurants:
+                    output += "<div>"
+                    output += "%s"%restaurant[0]
+                    output += "<a href='/restaurants/edit'>edit</a>"
+                    output += "<a href='/restaurants/delete'>delete</a>"
+                    output += "</div>"
                 output += "</body></html>"
                 self.wfile.write(output)
                 print output
