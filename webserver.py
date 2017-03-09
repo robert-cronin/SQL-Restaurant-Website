@@ -12,12 +12,13 @@ class webserverHandler(BaseHTTPRequestHandler):
                 restaurants = query("SELECT name FROM Restaurant")
                 output = ""
                 output += "<html><body>"
+                output += "<a href='/restaurants/new'> Make a new restaurant here </a><br></br>"
                 output += "<table>"
                 for restaurant in restaurants:
                     output += "<tr>"
                     output += "<td>%s</td>"%restaurant[0]
-                    output += "<td><a href='/restaurants/edit'>edit</a></td>"
-                    output += "<td><a href='/restaurants/delete'>delete</a></td>"
+                    output += "<td><form enctype='multipart/form-data' action='/restaurants/edit'>edit</form></td>"
+                    output += "<td><form href='/restaurants/delete/'>delete</form></td>"
                     output += "</tr>"
                 output += "</table>"
                 output += "</body></html>"
@@ -25,7 +26,7 @@ class webserverHandler(BaseHTTPRequestHandler):
                 print output
                 return
 
-            if self.path.endswith("/hola"):
+            if self.path.endswith("/restaurants/edit"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
@@ -39,8 +40,24 @@ class webserverHandler(BaseHTTPRequestHandler):
                 print output
                 return
 
+            if self.path.endswith("/restaurants/new"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                output = ""
+                output += "<html><body>"
+                output += "<h1>Add a new restaurant name here</h1>"
+                output += "<form method='POST' enctype='multipart/form-data' action='/restaurants/new'>"
+                output += "<input name='newRestaurantName' type='text' placeholder='New Restaurant Name'>"
+                output += "<input type='submit' value='Create'>"
+                output += "</form></body></html>"
+                self.wfile.write(output)
+                print output
+                return
+
         except IOError:
-            self.send_error(404, "File Not Fount %s" % self.path)
+            self.send_error(404, "File Not Found %s" % self.path)
 
     def do_POST(self):
         try:
