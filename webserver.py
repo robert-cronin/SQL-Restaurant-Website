@@ -12,12 +12,14 @@ class webserverHandler(BaseHTTPRequestHandler):
                 restaurants = query("SELECT name FROM Restaurant")
                 output = ""
                 output += "<html><body>"
+                output += "<table>"
                 for restaurant in restaurants:
-                    output += "<div>"
-                    output += "%s"%restaurant[0]
-                    output += "<a href='/restaurants/edit'>edit</a>"
-                    output += "<a href='/restaurants/delete'>delete</a>"
-                    output += "</div>"
+                    output += "<tr>"
+                    output += "<td>%s</td>"%restaurant[0]
+                    output += "<td><a href='/restaurants/edit'>edit</a></td>"
+                    output += "<td><a href='/restaurants/delete'>delete</a></td>"
+                    output += "</tr>"
+                output += "</table>"
                 output += "</body></html>"
                 self.wfile.write(output)
                 print output
