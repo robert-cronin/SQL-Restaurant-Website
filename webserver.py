@@ -18,7 +18,7 @@ class webserverHandler(BaseHTTPRequestHandler):
                     output += "<tr>"
                     output += "<td>%s</td>"%restaurant[0]
                     output += "<td><a href='/restaurants/%s/edit'>Edit</a></td>"%restaurant[1]
-                    output += "<td><a href='/restaurants/%s/delete/'>Delete</a></td>"%restaurant[1]
+                    output += "<td><a href='/restaurants/%s/delete'>Delete</a></td>"%restaurant[1]
                     output += "</tr>"
                     output += "<tr></tr>"
                 output += "</table>"
@@ -40,7 +40,7 @@ class webserverHandler(BaseHTTPRequestHandler):
                     output += "<h1>Current Restaurant Name: %s</h1>"%name
                     output += "<form method='POST' enctype='multipart/form-data' action='/restaurants/%s/edit'>"%restaurantIDPath
                     output += "<input name='editRestaurantName' type='text' placeholder='%s'>"%name
-                    output += "<input type='submit' value='Rename'"
+                    output += "<input type='submit' value='Rename'>"
                     output += "</form>"
                     output += "</html></body>"
                     self.wfile.write(output)
@@ -61,6 +61,25 @@ class webserverHandler(BaseHTTPRequestHandler):
                 output += "</body></html>"
                 self.wfile.write(output)
                 return
+
+            if self.path.endswith("/delete"):
+                restaurantIDPath = self.path.split("/")[2]
+                myRestaurantQuery = query("SELECT name FROM Restaurant WHERE id = %s"%restaurantIDPath)
+                for name in myRestaurantQuery:
+                    name = name
+                name = str(name[0])
+                if myRestaurantQuery != []:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    output = "<html><body>"
+                    output += "<h1>Are you sure you want to delete %s ?</h1>"%name
+                    output += "<form method='POST' enctype='multipart/form-data' action='/restaurants/%s/delete'>"%restaurantIDPath
+                    output += "<input type='submit' value='Delete'>"
+                    output += "</form>"
+                    output += "</html></body>"
+                    self.wfile.write(output)
+                    return
 
         except IOError:
             self.send_error(404, "File Not Found %s" % self.path)
@@ -85,16 +104,6 @@ class webserverHandler(BaseHTTPRequestHandler):
                 commit("INSERT into Restaurant (name) VALUES ('%s')"%messagecontent[0])
                 self.wfile.write(output)
 
-            if self.path.endswith("/restaurants/edit"):
-                self.send_response(301)
-                self.end_headers()
-
-                ctype,pdict = cgi.parse_header(self.headers.getheader('content-type'))
-                if ctype == 'multipart/form-data':
-                    fields = cgi.parse_multipart(self.rfile, pdict)
-                    messagecontent = fields.get('editRestaurantName')
-
-
             if self.path.endswith("/edit"):
                 self.send_response(301)
                 self.end_headers()
@@ -112,6 +121,19 @@ class webserverHandler(BaseHTTPRequestHandler):
                 output += "<a href='/restaurants'>Return to Restaurants</a>"
                 output += "</html></body>"
                 commit("UPDATE Restaurant SET name='%s' WHERE id=%s"%(messagecontent[0], restaurantIDPath))
+                self.wfile.write(output)
+
+            if self.path.endswith("/delete"):
+                self.send_response(301)
+                self.end_headers()
+                restaurantIDPath = self.path.split("/")[2]
+
+                output = ""
+                output += "<html><body>"
+                output += "<h2>Restaurant Deleted!</h2>"
+                output += "<a href='/restaurants'>Return to Restaurants</a>"
+                output += "</html></body>"
+                commit("DELETE FROM Restaurant WHERE id=%s"%restaurantIDPath)
                 self.wfile.write(output)
 
         except:
