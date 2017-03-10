@@ -1,6 +1,6 @@
 # Flask framework
 from flask import Flask
-flaskapp = Flask(__name__)
+app = Flask(__name__)
 
 @app.route('/')
 @app.route('/hello')
