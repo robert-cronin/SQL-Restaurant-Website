@@ -21,6 +21,4 @@ def commit(string):
     # Function for modifying the database (CUD operations)
     con = engine.connect()
     con.execute('%s'%string)
-    con.commit()
-    con.close()
     return
