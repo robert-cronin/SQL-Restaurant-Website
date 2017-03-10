@@ -1,5 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from database_query import query
+from database_query import query, commit
 import cgi
 
 class webserverHandler(BaseHTTPRequestHandler):
@@ -9,7 +9,7 @@ class webserverHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                restaurants = query("SELECT name FROM Restaurant")
+                restaurants = query("SELECT name, id FROM Restaurant")
                 output = ""
                 output += "<html><body>"
                 output += "<a href='/restaurants/new'> Make a new restaurant here </a><br></br>"
@@ -17,27 +17,49 @@ class webserverHandler(BaseHTTPRequestHandler):
                 for restaurant in restaurants:
                     output += "<tr>"
                     output += "<td>%s</td>"%restaurant[0]
-                    output += "<td><form enctype='multipart/form-data' action='/restaurants/edit'>edit</form></td>"
-                    output += "<td><form href='/restaurants/delete/'>delete</form></td>"
+                    output += "<td><a href='/restaurants/%s/edit'>Edit</a></td>"%restaurant[1]
+                    output += "<td><a href='/restaurants/%s/delete/'>Delete</a></td>"%restaurant[1]
                     output += "</tr>"
+                    output += "<tr></tr>"
                 output += "</table>"
                 output += "</body></html>"
                 self.wfile.write(output)
-                print output
                 return
+
+            if self.path.endswith("/edit"):
+                restaurantIDPath = self.path.split("/")[2]
+                myRestaurantQuery = query("SELECT name FROM Restaurant WHERE id = %s"%restaurantIDPath)
+                if myRestaurantQuery != []:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    output = "<html><body>"
+                    output += "<h1>Restaurant Name: %s</h1>"%myRestaurantQuery[0]
+                    output += "<form method='POST' enctype='multipart/form-data' action='/restaurant/%s/edit'>"%restaurantIDPath
+                    output += "<input name='newRestaurantName' type='text' placeholder='%s'>"%myRestaurantQuery[0]
+                    output += "<input type='submit' value='Rename'"
+                    output += "</form>"
+                    output += "</html></body>"
 
             if self.path.endswith("/restaurants/edit"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
+                ctype,pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    RestaurantName = fields.get('RestaurantName')
+
                 output = ""
                 output += "<html><body>"
-                output += "&#161 Hola ! <a href = '/hello' > Back to Hello"
-                output += "<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name='message' type='text'><input type='submit' value='Submit'></form>"
+                output += "How would you like to rename the restaurant?"
+                output += "<form method='POST' enctype='multipart/form-data' action='/restaurants/edit'>"
+                output += "<input name='editedRestaurantName' type='text' placeholder='%s'>"%RestaurantName
+                outptu += "<input type='submit' value='Modify'>"
+                output += "</form>"
                 output += "</body></html>"
                 self.wfile.write(output)
-                print output
                 return
 
             if self.path.endswith("/restaurants/new"):
@@ -51,9 +73,9 @@ class webserverHandler(BaseHTTPRequestHandler):
                 output += "<form method='POST' enctype='multipart/form-data' action='/restaurants/new'>"
                 output += "<input name='newRestaurantName' type='text' placeholder='New Restaurant Name'>"
                 output += "<input type='submit' value='Create'>"
-                output += "</form></body></html>"
+                output += "</form>"
+                output += "</body></html>"
                 self.wfile.write(output)
-                print output
                 return
 
         except IOError:
@@ -61,23 +83,42 @@ class webserverHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            self.send_response(301)
-            self.end_headers()
+            if self.path.endswith("/restaurants/new"):
+                self.send_response(301)
+                self.end_headers()
 
-            ctype,pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'multipart/form-data':
-                fields = cgi.parse_multipart(self.rfile, pdict)
-                messagecontent = fields.get('message')
+                ctype,pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    messagecontent = fields.get('newRestaurantName')
 
-            output = ""
-            output += "<html><body>"
-            output += "<h2> Okay how about this: </h2>"
-            output += "<h1> %s </h1>" % messagecontent[0]
+                output = ""
+                output += "<html><body>"
+                output += "<h2> New restaurant name: </h2>"
+                output += "<h3> %s </h3>" % messagecontent[0]
+                output += "<a href='/restaurants'>Return to Restaurants</a>"
+                output += "</html></body>"
+                commit("INSERT into Restaurant (name) VALUES ('%s')"%messagecontent[0])
+                self.wfile.write(output)
 
-            output += "<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name='message' type='text'><input type='submit' value='Submit'></form>"
-            output += "</html></body>"
-            self.wfile.write(output)
-            print output
+            if self.path.endswith("/restaurants/edit"):
+                self.send_response(301)
+                self.end_headers()
+
+                ctype,pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    messagecontent = fields.get('editRestaurantName')
+
+                output = ""
+                output += "<html><body>"
+                output += "<h2> New restaurant name: </h2>"
+                output += "<h3> %s </h3>" % messagecontent[0]
+                output += "<a href='/restaurants'>Return to Restaurants</a>"
+                output += "</html></body>"
+                commit("INSERT into Restaurant (name) VALUES ('%s')"%messagecontent[0])
+                self.wfile.write(output)
+
         except:
             pass
 
