@@ -13,14 +13,14 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 def query(string):
+    # Functon for querying the database (Read operations)
     con = engine.connect()
     return con.execute('%s'%string)
 
-def insert(string):
+def commit(string):
+    # Function for modifying the database (CUD operations)
     con = engine.connect()
     con.execute('%s'%string)
     con.commit()
-
-def delete(string):
-
-def update(string):
+    con.close()
+    return
